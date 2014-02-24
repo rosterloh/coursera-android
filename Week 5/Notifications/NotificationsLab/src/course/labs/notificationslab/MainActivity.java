@@ -13,12 +13,16 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
+import android.app.AlarmManager;
+import android.os.SystemClock;
 
 public class MainActivity extends Activity implements SelectionListener {
 
@@ -43,7 +47,9 @@ public class MainActivity extends Activity implements SelectionListener {
 	private FeedFragment mFeedFragment;
 	private String[] mRawFeeds = new String[3];
 	private String[] mProcessedFeeds = new String[3];
-
+	
+	private AlarmManager mAlarmManager;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -57,6 +63,15 @@ public class MainActivity extends Activity implements SelectionListener {
 				TWEET_FILENAME).lastModified()) < TWO_MIN;
 
 		ensureData();
+		
+		Intent alarmIntent = new Intent(MainActivity.this, DoAlarm.class);
+		PendingIntent alarm = PendingIntent.getBroadcast(MainActivity.this, 0, alarmIntent, 0);
+		
+		mAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+		mAlarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME,
+				SystemClock.elapsedRealtime() + TWO_MIN,
+				AlarmManager.INTERVAL_FIFTEEN_MINUTES,
+				alarm);
 
 	}
 
@@ -84,14 +99,12 @@ public class MainActivity extends Activity implements SelectionListener {
 			// Show a Toast Notification to inform user that 
 			// the app is "Downloading Tweets from Network"
 			log ("Issuing Toast Message");
-
-			
+			// Get context when in activity class with getApplicationContext(), getContext(), getBaseContext() or this 
+			Toast.makeText(this, "Downloading Tweets from Network", Toast.LENGTH_LONG).show();
 			
 			// TODO:
 			// Start new AsyncTask to download Tweets from network
-
-
-
+			new DownloaderTask(this).execute(URL_TSWIFT,URL_RBLACK,URL_LGAGA);
 			
 			// Set up a BroadcastReceiver to receive an Intent when download
 			// finishes. 
@@ -105,7 +118,12 @@ public class MainActivity extends Activity implements SelectionListener {
 					// Check to make sure this is an ordered broadcast
 					// Let sender know that the Intent was received
 					// by setting result code to RESULT_OK
-
+					if ( isOrderedBroadcast() ) {
+						// setResultCode(RESULT_OK);
+						setResult(Activity.RESULT_OK, null /* data */, null /* extra */);
+					} else {
+						abortBroadcast();
+					}
 
 				}
 			};
@@ -179,8 +197,7 @@ public class MainActivity extends Activity implements SelectionListener {
 		// TODO:
 		// Register the BroadcastReceiver to receive a 
 		// DATA_REFRESHED_ACTION broadcast
-
-
+		registerReceiver(mRefreshReceiver, new IntentFilter(DATA_REFRESHED_ACTION));
 		
 	}
 
@@ -189,9 +206,12 @@ public class MainActivity extends Activity implements SelectionListener {
 
 		// TODO:
 		// Unregister the BroadcastReceiver
-
-
-		
+		// Could also check if mRefreshReceiver != null
+		try {
+			unregisterReceiver(mRefreshReceiver);		
+		} catch (IllegalArgumentException e) {
+			// Do nothing
+		}
 		
 		super.onPause();
 
