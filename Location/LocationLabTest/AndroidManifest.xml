@@ -12,7 +12,7 @@
         android:name="android.test.InstrumentationTestRunner"
         android:targetPackage="course.labs.locationlab" />
 
-    <application android:label="course.labs.locationlab.test" >
+    <application android:label="course.labs.locationlab.test" android:debuggable="true">
         <uses-library android:name="android.test.runner" />
     </application>
  

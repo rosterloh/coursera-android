@@ -1,6 +1,7 @@
 package course.labs.locationlab;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.ListActivity;
 import android.content.Context;
@@ -9,7 +10,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -38,7 +38,7 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 
 	// Reference to the LocationManager
 	private LocationManager mLocationManager;
-
+	
 	// A fake location provider used for testing
 	private MockLocationProvider mMockLocationProvider;
 
@@ -50,11 +50,11 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		// This class is a ListActivity, so it has its own ListView
 		// ListView's adapter should be a PlaceViewAdapter
 		mAdapter = new PlaceViewAdapter(getApplicationContext());
+		getListView().setFooterDividersEnabled(true);
 		
 		// TODO - add a footerView to the ListView
 		// You can use footer_view.xml to define the footer
-		LayoutInflater li = getLayoutInflater();
-        TextView footerView = (TextView) li.inflate(R.layout.footer_view, null);
+		TextView footerView = (TextView) getLayoutInflater().inflate(R.layout.footer_view, null);
         getListView().addFooterView(footerView);
         
         footerView.setOnClickListener(new View.OnClickListener() {
@@ -84,8 +84,8 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
                         Toast.makeText(getApplicationContext(), "You already have this location badge", Toast.LENGTH_LONG).show();
     				} else {
     					log("Starting Place Download");
-                        PlaceRecord place = new PlaceRecord(mLastLocationReading);
-                        addNewPlace(place);
+                        //PlaceRecord place = new PlaceRecord(mLastLocationReading);
+                        //addNewPlace(place);
                         new PlaceDownloaderTask(PlaceViewActivity.this).execute(mLastLocationReading);
     				}
     			} else {
@@ -95,7 +95,7 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
     	});
         
         // Attach the adapter to this ListActivity's ListView
-        getListView().setAdapter(mAdapter);
+        setListAdapter(mAdapter);
 
 	}
 
@@ -106,9 +106,11 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		mMockLocationProvider = new MockLocationProvider(
 				LocationManager.NETWORK_PROVIDER, this);
 
+		if(null == (mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE)))
+			finish();
+				
 		// TODO - Check NETWORK_PROVIDER for an existing location reading.
 		// Only keep this last reading if it is fresh - less than 5 minutes old.
-		mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		Location mTempLocationReading = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 		
 		if((mTempLocationReading != null) && (age(mTempLocationReading) > FIVE_MINS))
@@ -125,7 +127,7 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		mMockLocationProvider.shutdown();
 
 		// TODO - unregister for location updates
-		mLocationManager.removeUpdates(mLocationListener);
+		mLocationManager.removeUpdates(this);
 
 		super.onPause();
 	}
@@ -147,7 +149,11 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		// the current location
 		// 3) If the current location is newer than the last locations, keep the
 		// current location.
-
+		if (currentLocation != null) {
+			if((mLastLocationReading==null) || (age(currentLocation) > age(mLastLocationReading))) {
+				mLastLocationReading = currentLocation;
+			}
+		}
 	}
 
 	@Override
@@ -202,6 +208,45 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		}
 	}
 
+	// Get the last known location from all providers
+	// return best reading is as accurate as minAccuracy and
+	// was taken no longer then minTime milliseconds ago
+
+	private Location bestLastKnownLocation(float minAccuracy, long minTime) {
+
+		Location bestResult = null;
+		float bestAccuracy = Float.MAX_VALUE;
+		long bestTime = Long.MIN_VALUE;
+
+		List<String> matchingProviders = mLocationManager.getAllProviders();
+
+		for (String provider : matchingProviders) {
+
+			Location location = mLocationManager.getLastKnownLocation(provider);
+
+			if (location != null) {
+
+				float accuracy = location.getAccuracy();
+				long time = location.getTime();
+
+				if (accuracy < bestAccuracy) {
+
+					bestResult = location;
+					bestAccuracy = accuracy;
+					bestTime = time;
+
+				}
+			}
+		}
+
+		// Return best reading or null
+		if (bestAccuracy > minAccuracy || bestTime < minTime) {
+			return null;
+		} else {
+			return bestResult;
+		}
+	}
+		
 	private static void log(String msg) {
 		try {
 			Thread.sleep(500);
