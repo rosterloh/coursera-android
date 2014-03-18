@@ -19,6 +19,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -56,11 +57,10 @@ public class PlaceViewActivity extends ListActivity implements
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		mCursorAdapter = new PlaceViewAdapter(getApplicationContext());
+		
 		getListView().setFooterDividersEnabled(true);
-
-        TextView footerView = (TextView) getLayoutInflater().inflate(R.layout.footer_view, null);
+		
+		TextView footerView = (TextView) getLayoutInflater().inflate(R.layout.footer_view, null);
         getListView().addFooterView(footerView);
 
         footerView.setOnClickListener(new View.OnClickListener() {
@@ -80,19 +80,17 @@ public class PlaceViewActivity extends ListActivity implements
     			}
         	}
         });
-
-        setListAdapter(mCursorAdapter);
-		
-		
-		
+       
 		// TODO - Create and set empty PlaceViewAdapter
         // ListView's adapter should be a PlaceViewAdapter called mCursorAdapter
-
-		
-		
+        String [] projection = { PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH, PlaceBadgesContract.COUNTRY_NAME, 
+        		PlaceBadgesContract.PLACE_NAME, PlaceBadgesContract.LAT, PlaceBadgesContract.LON};
+        Cursor c = getContentResolver().query(PlaceBadgesContract.CONTENT_URI, projection, null, null, null);
+        mCursorAdapter = new PlaceViewAdapter(getApplicationContext(), c, CursorAdapter.NO_SELECTION);  // FLAG_REGISTER_CONTENT_OBSERVER
+        setListAdapter(mCursorAdapter);
 		
 		// TODO - Initialize a CursorLoader
-
+        getLoaderManager().initLoader(0, null, this);
         
 	}
 
@@ -163,16 +161,17 @@ public class PlaceViewActivity extends ListActivity implements
 		log("Entered onCreateLoader()");
 
 		// TODO - Create a new CursorLoader and return it
-		
+		String select = null;
         
-        return null;
+        return new CursorLoader(this, PlaceBadgesContract.CONTENT_URI, null, 
+        		select, null, PlaceBadgesContract._ID + " ASC");
 	}
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> newLoader, Cursor newCursor) {
 
 		// TODO - Swap in the newCursor
-
+		mCursorAdapter.swapCursor(newCursor);
 	
     }
 
@@ -180,7 +179,7 @@ public class PlaceViewActivity extends ListActivity implements
 	public void onLoaderReset(Loader<Cursor> newLoader) {
 
 		// TODO - Swap in a null Cursor
-
+		mCursorAdapter.swapCursor(null);
 	
     }
 
