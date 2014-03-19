@@ -24,10 +24,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import course.labs.contentproviderlab.provider.PlaceBadgesContract;
-import course.labs.locationlab.PlaceDownloaderTask;
-import course.labs.locationlab.PlaceViewActivity;
-import course.labs.locationlab.PlaceViewAdapter;
-import course.labs.locationlab.R;
 
 public class PlaceViewActivity extends ListActivity implements
 		LocationListener, LoaderCallbacks<Cursor> {
@@ -61,12 +57,14 @@ public class PlaceViewActivity extends ListActivity implements
 		getListView().setFooterDividersEnabled(true);
 		
 		TextView footerView = (TextView) getLayoutInflater().inflate(R.layout.footer_view, null);
-        getListView().addFooterView(footerView);
-
-        footerView.setOnClickListener(new View.OnClickListener() {
+        
+        footerView.setOnClickListener(new OnClickListener() {
         	@Override
             public void onClick(View v) {
     			log("Entered footerView.OnClickListener.onClick()");
+
+    			mLastLocationReading = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
     			if(null != mLastLocationReading) {
     				if(mCursorAdapter.intersects(mLastLocationReading)) {
     					log("You already have this location badge");
@@ -83,11 +81,14 @@ public class PlaceViewActivity extends ListActivity implements
        
 		// TODO - Create and set empty PlaceViewAdapter
         // ListView's adapter should be a PlaceViewAdapter called mCursorAdapter
-        String [] projection = { PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH, PlaceBadgesContract.COUNTRY_NAME, 
-        		PlaceBadgesContract.PLACE_NAME, PlaceBadgesContract.LAT, PlaceBadgesContract.LON};
-        Cursor c = getContentResolver().query(PlaceBadgesContract.CONTENT_URI, projection, null, null, null);
-        mCursorAdapter = new PlaceViewAdapter(getApplicationContext(), c, CursorAdapter.NO_SELECTION);  // FLAG_REGISTER_CONTENT_OBSERVER
-        setListAdapter(mCursorAdapter);
+        //String [] projection = { PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH, PlaceBadgesContract.COUNTRY_NAME, 
+        //		PlaceBadgesContract.PLACE_NAME, PlaceBadgesContract.LAT, PlaceBadgesContract.LON};
+        //Cursor c = getContentResolver().query(PlaceBadgesContract.CONTENT_URI, projection, null, null, null);
+        //mCursorAdapter = new PlaceViewAdapter(getApplicationContext(), c, CursorAdapter.NO_SELECTION);  // FLAG_REGISTER_CONTENT_OBSERVER
+        mCursorAdapter = new PlaceViewAdapter(this, null, 0);
+        getListView().addFooterView(footerView);
+        getListView().setAdapter(mCursorAdapter);
+        //setListAdapter(mCursorAdapter);
 		
 		// TODO - Initialize a CursorLoader
         getLoaderManager().initLoader(0, null, this);
@@ -161,26 +162,32 @@ public class PlaceViewActivity extends ListActivity implements
 		log("Entered onCreateLoader()");
 
 		// TODO - Create a new CursorLoader and return it
-		String select = null;
+		final String columnsToExtract[] = new String[] {
+                PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH,
+                PlaceBadgesContract.COUNTRY_NAME, PlaceBadgesContract.PLACE_NAME,
+                PlaceBadgesContract.LAT, PlaceBadgesContract.LON};
+
+        String select = "((" + PlaceBadgesContract.COUNTRY_NAME + " NOTNULL) AND ("
+                + PlaceBadgesContract.COUNTRY_NAME + " != '' )";
         
-        return new CursorLoader(this, PlaceBadgesContract.CONTENT_URI, null, 
+        return new CursorLoader(this, PlaceBadgesContract.CONTENT_URI, columnsToExtract, 
         		select, null, PlaceBadgesContract._ID + " ASC");
 	}
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> newLoader, Cursor newCursor) {
 
-		// TODO - Swap in the newCursor
-		mCursorAdapter.swapCursor(newCursor);
-	
+		if(mCursorAdapter != null && newCursor != null) {
+			mCursorAdapter.swapCursor(newCursor);
+		}
     }
 
 	@Override
 	public void onLoaderReset(Loader<Cursor> newLoader) {
 
-		// TODO - Swap in a null Cursor
-		mCursorAdapter.swapCursor(null);
-	
+		if( mCursorAdapter != null ) {
+			mCursorAdapter.swapCursor(null);
+		}
     }
 
 	private long age(Location location) {

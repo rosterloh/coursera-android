@@ -16,6 +16,7 @@ import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +32,7 @@ public class PlaceViewAdapter extends CursorAdapter {
 	private static LayoutInflater inflater = null;
 	private Context mContext;
 	private String mBitmapStoragePath;
+	private static final String TAG = "PlaceViewAdapter";
 
 	public PlaceViewAdapter(Context context, Cursor cursor, int flags) {
 		super(context, cursor, flags);
@@ -38,43 +40,63 @@ public class PlaceViewAdapter extends CursorAdapter {
 		mContext = context;
 		inflater = LayoutInflater.from(mContext);
 
-		if (Environment.getExternalStorageState().equals(
-				Environment.MEDIA_MOUNTED)) {
+		// Moved the declaration of the bitmapStorageDir to here so that we can instantiate it
+        // where it needs to be instantiated which is after we determine internal/external storage
+        File bitmapStorageDir = null;
+        Log.i(TAG, "PlaceViewAdapter external storage: " + Environment.getExternalStorageState());
+        try {
+            if (isExternalStorageWritable()) {
+                // The bulk of this code is unchanged from the original. It's more rearranged
+                // to accommodate switching between external and internal
+                String root = mContext.getExternalFilesDir(null).getCanonicalPath();
+            	//String root = mContext.getCacheDir().getCanonicalPath();
+            	if (null != root) {
+                    bitmapStorageDir = new File(root, APP_DIR);
+                }
+            } else {
+                // This is the line for internal storage
+                bitmapStorageDir = new File(context.getFilesDir(), Environment.DIRECTORY_PICTURES);
+            }
+            // Moved the actual creation of the directory here so that no code is repeated
+            if (null != bitmapStorageDir) {
+                bitmapStorageDir.mkdir();
+                mBitmapStoragePath = bitmapStorageDir.getCanonicalPath();
+                Log.i(TAG, "storage path: " + mBitmapStoragePath);
+            }
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        } catch (NullPointerException e) {
+            Log.e(TAG, e.getMessage());
+        }
 
-			try {
-
-				String root = mContext.getExternalFilesDir(null)
-						.getCanonicalPath();
-
-				if (null != root) {
-
-					File bitmapStorageDir = new File(root, APP_DIR);
-					bitmapStorageDir.mkdirs();
-					mBitmapStoragePath = bitmapStorageDir.getCanonicalPath();
-
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
 	}
-
+	
+	/* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        Log.i(TAG, "in isExternalStorageWriteable()");
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            Log.i(TAG, "EXT Storage is available");
+            return true;
+        }
+        Log.i(TAG, "NO EXT Storage is available");
+        return false;
+    }
+    
 	@Override
 	public Cursor swapCursor(Cursor newCursor) {
 		super.swapCursor(newCursor);
 
 		if (null != newCursor) {
 
-        // TODO - clear the ArrayList list so it contains
-		// the current set of PlaceRecords. Use the 
-		// getPlaceRecordFromCursor() method to add the
-		// current place to the list
-		for (PlaceRecord item : list) {
-			item = getPlaceRecordFromCursor(newCursor);
-		}
+        	list.clear();
 		
-        // Set the NotificationURI for the new cursor
-		newCursor.setNotificationUri(mContext.getContentResolver(),
+			while( newCursor.moveToNext() ) {
+    	        list.add(getPlaceRecordFromCursor(newCursor));
+        	}
+            
+        	// Set the NotificationURI for the new cursor
+			newCursor.setNotificationUri(mContext.getContentResolver(),
 					PlaceBadgesContract.CONTENT_URI);
 
 		}
@@ -142,7 +164,6 @@ public class PlaceViewAdapter extends CursorAdapter {
 			listItem.setFlagBitmapPath(filePath);
 			list.add(listItem);
 
-			// TODO - Insert new record into the ContentProvider
 			ContentValues mNewValues = new ContentValues();
 			mNewValues.put(PlaceBadgesContract.FLAG_BITMAP_PATH, listItem.getFlagBitmapPath());
 			mNewValues.put(PlaceBadgesContract.COUNTRY_NAME, listItem.getCountryName());
@@ -150,7 +171,8 @@ public class PlaceViewAdapter extends CursorAdapter {
 			mNewValues.put(PlaceBadgesContract.LAT, listItem.getLat());
 			mNewValues.put(PlaceBadgesContract.LON, listItem.getLon());
 			
-			mContext.getContentResolver().insert(PlaceBadgesContract.CONTENT_URI, mNewValues);
+			//mContext.getContentResolver().insert(PlaceBadgesContract.CONTENT_URI, mNewValues);
+			mContext.getContentResolver().insert(PlaceBadgesContract.BASE_URI, mNewValues);
         }
 
 	}
@@ -163,8 +185,8 @@ public class PlaceViewAdapter extends CursorAdapter {
 
 		list.clear();
 
-		// TODO - delete all records in the ContentProvider
-		mContext.getContentResolver().delete(PlaceBadgesContract.CONTENT_URI, null, null);
+		//mContext.getContentResolver().delete(PlaceBadgesContract.CONTENT_URI, null, null);
+		mContext.getContentResolver().delete(PlaceBadgesContract.BASE_URI, null, null);
 		
 	}
 
