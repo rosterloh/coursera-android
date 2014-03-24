@@ -171,8 +171,9 @@ public class PlaceViewAdapter extends CursorAdapter {
 			mNewValues.put(PlaceBadgesContract.LAT, listItem.getLat());
 			mNewValues.put(PlaceBadgesContract.LON, listItem.getLon());
 			
-			//mContext.getContentResolver().insert(PlaceBadgesContract.CONTENT_URI, mNewValues);
-			mContext.getContentResolver().insert(PlaceBadgesContract.BASE_URI, mNewValues);
+			mContext.getContentResolver().insert(PlaceBadgesContract.CONTENT_URI, mNewValues);
+			//mContext.getContentResolver().insert(PlaceBadgesContract.BASE_URI, mNewValues);
+			mContext.getContentResolver().notifyChange(PlaceBadgesContract.CONTENT_URI, null);
         }
 
 	}
@@ -185,8 +186,8 @@ public class PlaceViewAdapter extends CursorAdapter {
 
 		list.clear();
 
-		//mContext.getContentResolver().delete(PlaceBadgesContract.CONTENT_URI, null, null);
-		mContext.getContentResolver().delete(PlaceBadgesContract.BASE_URI, null, null);
+		mContext.getContentResolver().delete(PlaceBadgesContract.CONTENT_URI, null, null);
+		//mContext.getContentResolver().delete(PlaceBadgesContract.BASE_URI, null, null);
 		
 	}
 

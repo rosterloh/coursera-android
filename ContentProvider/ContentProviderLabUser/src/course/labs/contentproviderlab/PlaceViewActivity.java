@@ -50,20 +50,27 @@ public class PlaceViewActivity extends ListActivity implements
 	// A fake location provider used for testing
 	private MockLocationProvider mMockLocationProvider;
 
+	private View mFooterView;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		getListView().setFooterDividersEnabled(true);
-		
-		TextView footerView = (TextView) getLayoutInflater().inflate(R.layout.footer_view, null);
+		// ListView's adapter should be a PlaceViewAdapter called mCursorAdapter
+		mCursorAdapter = new PlaceViewAdapter(this, null, 0);
         
-        footerView.setOnClickListener(new OnClickListener() {
+		//getListView().setFooterDividersEnabled(true);
+		
+		//TextView footerView = (TextView) getLayoutInflater().inflate(R.layout.footer_view, null);
+        mFooterView = getLayoutInflater().inflate(R.layout.footer_view, getListView(), false);
+
+        //footerView.setOnClickListener(new OnClickListener() {
+        mFooterView.setOnClickListener(new OnClickListener() {
         	@Override
             public void onClick(View v) {
     			log("Entered footerView.OnClickListener.onClick()");
 
-    			mLastLocationReading = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+    			//mLastLocationReading = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
     			if(null != mLastLocationReading) {
     				if(mCursorAdapter.intersects(mLastLocationReading)) {
@@ -75,22 +82,21 @@ public class PlaceViewActivity extends ListActivity implements
     				}
     			} else {
     				log("Location data is not available");
+    				mFooterView.setEnabled(false);
+					return;
     			}
         	}
         });
        
-		// TODO - Create and set empty PlaceViewAdapter
-        // ListView's adapter should be a PlaceViewAdapter called mCursorAdapter
-        //String [] projection = { PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH, PlaceBadgesContract.COUNTRY_NAME, 
+		//String [] projection = { PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH, PlaceBadgesContract.COUNTRY_NAME, 
         //		PlaceBadgesContract.PLACE_NAME, PlaceBadgesContract.LAT, PlaceBadgesContract.LON};
         //Cursor c = getContentResolver().query(PlaceBadgesContract.CONTENT_URI, projection, null, null, null);
         //mCursorAdapter = new PlaceViewAdapter(getApplicationContext(), c, CursorAdapter.NO_SELECTION);  // FLAG_REGISTER_CONTENT_OBSERVER
-        mCursorAdapter = new PlaceViewAdapter(this, null, 0);
-        getListView().addFooterView(footerView);
+        getListView().addFooterView(mFooterView);
         getListView().setAdapter(mCursorAdapter);
         //setListAdapter(mCursorAdapter);
 		
-		// TODO - Initialize a CursorLoader
+		// Initialize a CursorLoader
         getLoaderManager().initLoader(0, null, this);
         
 	}
@@ -135,8 +141,9 @@ public class PlaceViewActivity extends ListActivity implements
 	@Override
 	public void onLocationChanged(Location currentLocation) {
 
-		if (currentLocation != null) {
-			if((mLastLocationReading==null) || (age(currentLocation) > age(mLastLocationReading))) {
+		if (currentLocation != null) {			
+			mFooterView.setEnabled(true);
+			if((mLastLocationReading==null) || (age(currentLocation) < age(mLastLocationReading))) {
 				mLastLocationReading = currentLocation;
 			}
 		}
@@ -161,7 +168,7 @@ public class PlaceViewActivity extends ListActivity implements
 	public Loader<Cursor> onCreateLoader(int arg0, Bundle arg1) {
 		log("Entered onCreateLoader()");
 
-		// TODO - Create a new CursorLoader and return it
+		// Create a new CursorLoader and return it
 		final String columnsToExtract[] = new String[] {
                 PlaceBadgesContract._ID, PlaceBadgesContract.FLAG_BITMAP_PATH,
                 PlaceBadgesContract.COUNTRY_NAME, PlaceBadgesContract.PLACE_NAME,
@@ -172,11 +179,13 @@ public class PlaceViewActivity extends ListActivity implements
         
         return new CursorLoader(this, PlaceBadgesContract.CONTENT_URI, columnsToExtract, 
         		select, null, PlaceBadgesContract._ID + " ASC");
+        /*return new CursorLoader(getApplicationContext(), PlaceBadgesContract.CONTENT_URI, 
+								null, null, null, null);*/
 	}
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> newLoader, Cursor newCursor) {
-
+		// Swap in the newCursor
 		if(mCursorAdapter != null && newCursor != null) {
 			mCursorAdapter.swapCursor(newCursor);
 		}
@@ -184,7 +193,7 @@ public class PlaceViewActivity extends ListActivity implements
 
 	@Override
 	public void onLoaderReset(Loader<Cursor> newLoader) {
-
+		// Swap in a null Cursor
 		if( mCursorAdapter != null ) {
 			mCursorAdapter.swapCursor(null);
 		}
