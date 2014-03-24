@@ -99,7 +99,6 @@ public class EditStoryFragment extends Fragment {
 	MoocResolver resolver;
 
 	// listener to button presses.
-	// TODO determine/label pattern.
 	OnClickListener myOnClickListener = new OnClickListener() {
 		@Override
 		public void onClick(View v) {
@@ -211,7 +210,6 @@ public class EditStoryFragment extends Fragment {
 			try {
 				resolver.updateStoryWithID(location);
 			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return;
 			}
@@ -242,7 +240,6 @@ public class EditStoryFragment extends Fragment {
 		try {
 			date = StoryData.FORMAT.parse(storyTimeEditable.toString());
 		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
 			Log.e("CreateStoryFragment", "Date was not parsable, reverting to current time");
 			date = new Date();
 		}

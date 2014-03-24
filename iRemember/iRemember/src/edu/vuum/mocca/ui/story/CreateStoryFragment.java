@@ -198,11 +198,13 @@ public class CreateStoryFragment extends Fragment {
 			public void onClick(View v) {
 				titleET.setText("" + "");
 				bodyET.setText("" + "");
-				videoCaptureButton.setText("" + "");
 				imageNameET.setText("" + "");
-				imageCaptureButton.setText("" + "");
-				storyTimeET.setText("" + 0);
-				locationButton.setText("" + 0);
+				imageLocation.setText("" + "");
+				videoLocation.setText("" + "");
+				audioLocation.setText("" + "");
+				storyTimeET.setText("Click text to set");
+				latitudeValue.setText("" + "0");
+				longitudeValue.setText("" + "0");
 			}
 		});
 
@@ -234,7 +236,6 @@ public class CreateStoryFragment extends Fragment {
 				try {
 					date = StoryData.FORMAT.parse(storyTimeCreateable.toString());
 				} catch (ParseException e1) {
-					// TODO Auto-generated catch block
 					Log.e("CreateStoryFragment", "Date was not parsable, reverting to current time");
 					date = new Date();
 				}
