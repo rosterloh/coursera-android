@@ -144,9 +144,14 @@ public class MoocProvider extends ContentProvider {
             final String[] projection, final String selection,
             final String[] selectionArgs, final String sortOrder) {
 
-        // TODO: Perform a query on the database with the given parameters
-    	
-    	return null;
+        // Perform a query on the database with the given parameters
+    	final Cursor cursor = mDB.query(tableName, projection, selection, selectionArgs, sortOrder);
+		
+    	if(getContext() != null) {
+			cursor.setNotificationUri(getContext().getContentResolver(), uri);
+		}
+		
+		return cursor;
     }
 
     @Override
