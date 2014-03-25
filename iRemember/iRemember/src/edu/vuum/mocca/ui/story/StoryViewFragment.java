@@ -222,21 +222,19 @@ public class StoryViewFragment extends Fragment {
 			
 			String audioLinkPath = String.valueOf(storyData.audioLink).toString();
 			
-			// TODO - Set up audio to play back on click. For this part we can easily parse the audio
+			// Set up audio to play back on click. For this part we can easily parse the audio
 			// as a ringtone and play it back as such. Use the RingtonManager function getRingtone on
 			// the audioLinkPath to create the ringtone
-			
-			final Ringtone ringtone = null;
+			Uri path = Uri.parse(audioLinkPath);
+			final Ringtone ringtone = RingtoneManager.getRingtone(getActivity(), path);
 			
 			
 			audioButton.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					
-					// TODO - Play the ringtone
-					
-
-					
+					// Play the ringtone
+					ringtone.play();					
 				}
 			});
 			
