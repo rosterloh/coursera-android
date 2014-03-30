@@ -185,6 +185,7 @@ public class CreateStoryActivity extends StoryActivityBase {
 		return Uri.fromFile(getOutputMediaFile(type));
 	}
 
+	/*
 	private static File getOutputMediaFile(int type) {
 		Log.d(LOG_TAG, "getOutputMediaFile() type:" + type);
 		// To be safe, you should check that the SDCard is mounted
@@ -249,6 +250,49 @@ public class CreateStoryActivity extends StoryActivityBase {
 		Log.i(LOG_TAG, "NO EXT Storage is available");
 		return false;
 	}
+	*/
+	
+	private static File getOutputMediaFile(int type) {
+		Log.d(LOG_TAG, "getOutputMediaFile() type:" + type);
+		// To be safe, you should check that the SDCard is mounted
+		// using Environment.getExternalStorageState() before doing this.
+
+		// For future implementation: store videos in a separate directory
+		File mediaStorageDir = new File(
+				Environment
+						.getExternalStorageDirectory(),
+				"iRemember");
+		// This location works best if you want the created images to be shared
+		// between applications and persist after your app has been uninstalled.
+
+		// Create the storage directory if it does not exist
+		if (!mediaStorageDir.exists()) {
+			if (!mediaStorageDir.mkdirs()) {
+				Log.d("MyCameraApp", "failed to create directory");
+				return null;
+			}
+		}
+
+		// Create a media file name
+		String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+				.format(new Date());
+		File mediaFile;
+		if (type == MEDIA_TYPE_IMAGE) {
+			mediaFile = new File(mediaStorageDir.getPath() + File.separator
+					+ "IMG_" + timeStamp + ".jpg");
+		} else if (type == MEDIA_TYPE_VIDEO) {
+			mediaFile = new File(mediaStorageDir.getPath() + File.separator
+					+ "VID_" + timeStamp + ".mp4");
+		} else if (type == MEDIA_TYPE_AUDIO) {
+			mediaFile = new File(mediaStorageDir.getPath() + File.separator
+					+ "AUD_" + timeStamp + ".3gp");
+		} else {
+			Log.e(LOG_TAG, "typ of media file not supported: type was:" + type);
+			return null;
+		}
+
+		return mediaFile;
+	}
 
 	// This function creates a new Intent to launch the Audio Recording Activity
 
@@ -267,7 +311,7 @@ public class CreateStoryActivity extends StoryActivityBase {
 
 		// Start a new activity for result, using the new intent and the request
 		// code MIC_SOUND_REQUEST
-		startActivityForResult(soundIntent, MIC_SOUND_REQUEST);
+		this.startActivityForResult(soundIntent, MIC_SOUND_REQUEST);
 	}
 
 	// This function creates a new Intent to launch the built-in Camera activity
@@ -282,16 +326,16 @@ public class CreateStoryActivity extends StoryActivityBase {
 
 		// Set the imagePath for this image file using the pre-made function
 		// getOutputMediaFile to create a new filename for this specific image;
-		final Uri imageFileUri = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
-		fragment.imagePath = imageFileUri;
+		Uri imageUri = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
+		fragment.imagePath = imageUri;
 		
 		// Add the filename to the Intent as an extra. Use the Intent-extra name
 		// from the MediaStore class, EXTRA_OUTPUT
-		cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageFileUri);
+		cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
 
 		// Start a new activity for result, using the new intent and the request
 		// code CAMERA_PIC_REQUEST
-		startActivityForResult(cameraIntent, CAMERA_PIC_REQUEST);
+		this.startActivityForResult(cameraIntent, CAMERA_PIC_REQUEST);
 
 	}
 
@@ -307,7 +351,7 @@ public class CreateStoryActivity extends StoryActivityBase {
 
 		// Set the fileUri for this video file using the pre-made function
 		// getOutputMediaFile to create a new filename for this specific video;
-		final Uri videoFileUri = getOutputMediaFileUri(MEDIA_TYPE_VIDEO);
+		Uri videoFileUri = getOutputMediaFileUri(MEDIA_TYPE_VIDEO);
 		fragment.fileUri = videoFileUri;
 		
 		// Add the filename to the Intent as an extra. Use the Intent-extra name
@@ -321,7 +365,8 @@ public class CreateStoryActivity extends StoryActivityBase {
 
 		// Start a new activity for result, using the new intent and the request
 		// code CAMERA_VIDEO_REQUEST
-		startActivityForResult(videoIntent, CAMERA_VIDEO_REQUEST);
+		if (videoIntent.resolveActivity(getPackageManager()) != null)
+			this.startActivityForResult(videoIntent, CAMERA_VIDEO_REQUEST);
 
 	}
 
